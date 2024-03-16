@@ -1,30 +1,33 @@
+require('dotenv').config();
 const express = require('express');
 const app = express();
 const cors = require('cors');
+// const mongoose = require("mongoose");
+const Note = require('./models/note');
+
+
 
 app.use(express.static("dist"));
 app.use(express.json());
 app.use(cors());
 
-
-
-let notes = [
-  {
-    id: 1,
-    content: "HTML is easy",
-    important: true
-  },
-  {
-    id: 2,
-    content: "Browser can execute only JavaScript",
-    important: false
-  },
-  {
-    id: 3,
-    content: "GET and POST are the most important methods of HTTP protocol",
-    important: true
-  }
-]
+// let notes = [
+//   {
+//     id: 1,
+//     content: "HTML is easy",
+//     important: true
+//   },
+//   {
+//     id: 2,
+//     content: "Browser can execute only JavaScript",
+//     important: false
+//   },
+//   {
+//     id: 3,
+//     content: "GET and POST are the most important methods of HTTP protocol",
+//     important: true
+//   }
+// ]
 
 
 // middleware
@@ -44,7 +47,9 @@ app.get("/", (request, response) => {
 });
 
 app.get("/api/notes", (request, response) => {
-  response.json(notes);
+  Note.find({}).then(notes => {
+    response.json(notes);
+  })
 })
 
 
@@ -67,20 +72,20 @@ const generateId = () => {
 app.post("/api/notes", (request, response) => {
   const body = request.body;
 
-  if (!body.content) {
+  if (body.content === undefined) {
     return response.status(400).json({
       error: 'content missing'
     })
   }
 
-  const note = {
+  const note = new Note({
     content: body.content,
-    important: Boolean(body.important) || false,
-    id: generateId()
-  }
+    important: body.important || false,
+  })
 
-  notes = notes.concat(note)
-  response.json(note);
+  note.save().then(savedNote => {
+    response.json(savedNote);
+  })
 });
 
 app.delete("/api/notes/:id", (request, response) => {
@@ -96,7 +101,7 @@ const unknownEndpoint = (req, res, next) => {
 
 app.use(unknownEndpoint);
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
